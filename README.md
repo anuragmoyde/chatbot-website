@@ -1,70 +1,140 @@
-# Getting Started with Create React App
+# InsightAI Chatbot
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A Retrieval-Augmented Generation (RAG) chatbot built using n8n, OpenAI, Pinecone, and Netlify, designed to provide conversational responses grounded in factual context. The chatbot is tailored for the Vijay Social Welfare Society (VSWS), an NGO focused on social initiatives in India.
 
-## Available Scripts
+Live Site: [https://insight-ai-chat.netlify.app/](https://insight-ai-chat.netlify.app/)
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## Table of Contents
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [How It Works](#how-it-works)
+- [n8n Workflow Architecture](#n8n-workflow-architecture)
+- [Frontend Setup](#frontend-setup)
+- [Deployment](#deployment)
+- [Limitations & Future Roadmap](#limitations--future-roadmap)
+- [Contributing](#contributing)
+- [License](#license)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## Overview
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+InsightAI uses the Retrieval-Augmented Generation (RAG) method to combine contextual document retrieval with generative AI. The chatbot is hosted on Netlify, while the backend logic runs through a custom n8n workflow deployed on Render. It retrieves relevant context from the VSWS Annual Report and crafts factual responses using a GPT model served via OpenRouter.
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Tech Stack
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- **Frontend**: React.js
+- **Backend Orchestration**: n8n (self-hosted)
+- **LLM Provider**: GPT-4 via OpenRouter
+- **Embedding Model**: OpenAI Embeddings (via HTTP node)
+- **Vector Store**: Pinecone
+- **Deployment Platforms**: Netlify (frontend), Render (backend)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## How It Works
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+1. **User Input**: The user submits a query from the frontend React app.
+2. **Webhook Trigger (n8n)**: n8n receives the input via a Webhook node.
+3. **Pre-processing**: Trims the input and validates it; if empty, a fallback message is injected.
+4. **Session Management**: A unique session ID is assigned using a UUID node.
+5. **Embedding Generation**: The query is sent to OpenAI’s embedding API via an HTTP node.
+6. **Vector Search (Pinecone)**: Embeddings are used to query Pinecone and retrieve top-k matching context chunks.
+7. **Prompt Assembly**: The context chunks are formatted and injected into a structured prompt.
+8. **Completion (OpenRouter)**: The prompt is sent to OpenRouter’s GPT-4 endpoint for response generation.
+9. **Response Delivery**: The generated answer is returned via a Webhook response to the frontend.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## n8n Workflow Architecture
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 1. Webhook (Trigger Node)
+Receives `POST` requests from the frontend with user input.
 
-## Learn More
+### 2. Function Node (Preprocessing)
+Trims whitespace and checks for empty queries; assigns fallback if needed.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### 3. UUID Node (Session ID)
+Generates a unique identifier to group the session’s queries.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### 4. HTTP Node (Embedding Generation)
+Calls OpenAI’s Embeddings API to vectorize the user's query.
 
-### Code Splitting
+### 5. HTTP Node (Pinecone Vector Search)
+Sends embedding to Pinecone and retrieves top-k relevant document chunks.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### 6. Function Node (Prompt Construction)
+Formats retrieved chunks into a clean prompt, along with the original question.
 
-### Analyzing the Bundle Size
+### 7. HTTP Node (LLM Completion)
+Calls OpenRouter’s GPT-4 endpoint to generate a contextual response.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### 8. Respond to Webhook
+Sends the structured response back to the frontend in JSON format.
 
-### Making a Progressive Web App
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Frontend Setup
 
-### Advanced Configuration
+Built using React.js and deployed on Netlify.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Key Components:
+- **Chat.js**: Handles user input and displays chatbot responses.
+- **axios**: Used to post queries to n8n’s Webhook endpoint.
 
-### Deployment
+Ensure `react-scripts` is included in `package.json` for builds:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```bash
+npm install react-scripts --save-dev
+```
 
-### `npm run build` fails to minify
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Deployment
+
+### Frontend (Netlify)
+1. Connect GitHub repo
+2. Build command: `npm run build`
+3. Publish directory: `build`
+
+### Backend (Render)
+1. Create a Web Service
+2. Connect GitHub repo containing the n8n instance
+3. Add environment variables (e.g., `OPENAI_API_KEY`, `PINECONE_API_KEY`, `OPENROUTER_API_KEY`, `PINECONE_ENV`, `PINECONE_INDEX`)
+4. Build command: `npm install && npm run build`
+5. Start command: `npm start`
+
+---
+
+## Limitations & Future Roadmap
+
+### Limitations
+- Render free tier sleeps after inactivity
+- No session memory or chat history
+- Single-document scope (VSWS annual report)
+
+### Roadmap
+- Support for multiple document types and sources
+- Session-based memory and history
+- Admin dashboard for content upload and moderation
+- Feedback system for tuning prompt performance
+- Authentication and user management
+- Enhanced UI/UX (typing animation, avatars, smart fallback responses)
+- Query logging and analytics dashboard
+
+---
+
+## Contributing
+
+Pull requests are welcome. For significant changes, open an issue first to propose modifications.
+
+---
+
+## License
+
+[MIT](https://choosealicense.com/licenses/mit/)
