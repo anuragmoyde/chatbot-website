@@ -29,7 +29,7 @@ const Chat = () => {
       
       const response = await axios({
         method: 'post',
-        url: 'https://anuragmm.app.n8n.cloud/webhook-test/chat-agent',
+        url: 'https://anuragmm.app.n8n.cloud/webhook/chat-agent',
         data: {
           message: userMessage
         },
